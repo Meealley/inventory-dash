@@ -3,13 +3,12 @@ const User = require("../Models/UserModel");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 
-
 //Generate token
 const generatedToken = (id) => {
-    return jwt.sign({ id }, process.env.JWT_SECRET, {
-      expiresIn: "30d",
-    });
-  };
+  return jwt.sign({ id }, process.env.JWT_SECRET, {
+    expiresIn: "30d",
+  });
+};
 
 //Get User
 const getUser = asyncHandler(async (req, res) => {
@@ -19,8 +18,8 @@ const getUser = asyncHandler(async (req, res) => {
 });
 
 const registerUser = asyncHandler(async (req, res) => {
-  const { name, email, password, phone } = req.body;
-  if (!name || !email || !password || !phone) {
+  const { name, email, password } = req.body;
+  if (!name || !email || !password) {
     res.status(400);
     throw new Error("Plase fill in all fields");
   }
@@ -49,7 +48,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
   const token = generatedToken(user._id);
   //cookieManager
-  res.cookie("token", generatedToken(user._id), {
+  res.cookie("token", token, {
     path: "/",
     httpOnly: true,
     expires: new Date(Date.now() + 1000 * 86400),
@@ -79,6 +78,41 @@ const registerUser = asyncHandler(async (req, res) => {
   //   res.status(201).json({ message: "Registering user" });
 });
 
+const loginUser = asyncHandler(async (req, res) => {
+  const { email, password } = req.body;
 
+  //Validate users
+  if (!email || !password) {
+    res.status(400);
+    throw new Error("Please enter a valid email");
+  }
+  //check if user exists
+  const user = await User.findOne({ email });
 
-module.exports = { getUser, registerUser };
+  //Generate token 
+  const token = generatedToken(user._id);
+  //cookieManager
+  res.cookie("token", token, {
+    path: "/",
+    httpOnly: true,
+    expires: new Date(Date.now() + 1000 * 86400),
+    sameSite: "none",
+    secure: true,
+  });
+
+  if (user && (await bcrypt.compare(password, user.password))) {
+    const { _id, name, email, password } = user;
+    res.status(201).json({
+        _id,
+        name,
+        email,
+        password,
+        token,
+      });
+  } else {
+    res.status(400);
+    throw new Error("Invalid user credentials");
+  }
+});
+
+module.exports = { getUser, registerUser, loginUser };
