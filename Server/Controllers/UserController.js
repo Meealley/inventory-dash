@@ -74,10 +74,9 @@ const registerUser = asyncHandler(async (req, res) => {
     res.status(400);
     throw new Error("Invalid user data");
   }
-
-  //   res.status(201).json({ message: "Registering user" });
 });
 
+//================================================================For user Login =================================================================
 const loginUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
@@ -89,7 +88,7 @@ const loginUser = asyncHandler(async (req, res) => {
   //check if user exists
   const user = await User.findOne({ email });
 
-  //Generate token 
+  //Generate token
   const token = generatedToken(user._id);
   //cookieManager
   res.cookie("token", token, {
@@ -103,16 +102,34 @@ const loginUser = asyncHandler(async (req, res) => {
   if (user && (await bcrypt.compare(password, user.password))) {
     const { _id, name, email, password } = user;
     res.status(201).json({
-        _id,
-        name,
-        email,
-        password,
-        token,
-      });
+      _id,
+      name,
+      email,
+      password,
+      token,
+    });
   } else {
     res.status(400);
     throw new Error("Invalid user credentials");
   }
 });
 
-module.exports = { getUser, registerUser, loginUser };
+//================================================================For Logging users out =================================================================
+const logoutUser = asyncHandler(async (req, res) => {
+  res.cookie("token", "", {
+    path: "/",
+    httpOnly: true,
+    expires: new Date(0),
+    sameSite: "none",
+    secure: true,
+  });
+  res.status(200).json({ message: "Successfully logged out" });
+});
+
+//===================== For getting the user data =================
+const getMe = asyncHandler(async (req, res) => {
+  res.json({ message: "getting user data" });
+  F;
+});
+
+module.exports = { getUser, registerUser, loginUser, logoutUser, getMe };
